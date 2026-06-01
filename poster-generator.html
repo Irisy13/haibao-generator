@@ -1,0 +1,2218 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>海报生成控制台</title>
+  <style>
+    :root {
+      --bg: #f5f6fa;
+      --panel: #ffffff;
+      --panel-2: #fafbff;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d9deea;
+      --red: #b91c1c;
+      --red-soft: #fff1f1;
+      --gold: #b7791f;
+      --gold-soft: #fff7e6;
+      --blue: #1d4ed8;
+      --blue-soft: #eef4ff;
+      --green: #16794c;
+      --green-soft: #edfdf5;
+      --shadow: 0 12px 32px rgba(18, 28, 45, .08);
+      --radius: 8px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 24px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--red), var(--gold) 62%, var(--blue));
+      box-shadow: 0 8px 20px rgba(185, 28, 28, .18);
+      flex: 0 0 auto;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .shell {
+      width: min(1680px, 100%);
+      margin: 0 auto;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .shell > * {
+      min-width: 0;
+    }
+
+    .controls-panel {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-items: stretch;
+    }
+
+    .controls-panel .panel-head {
+      grid-column: 1 / -1;
+    }
+
+    .controls-panel .section {
+      border-bottom: 0;
+      border-right: 1px solid var(--line);
+      min-width: 0;
+    }
+
+    .controls-panel .section:last-child {
+      border-right: 0;
+    }
+
+    .panel-head {
+      min-height: 48px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    .section {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section:last-child {
+      border-bottom: 0;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #30394d;
+    }
+
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .section-title-row .section-title {
+      margin-bottom: 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    label {
+      color: #344054;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    select, input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      padding: 9px 10px;
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 72px;
+    }
+
+    select:focus, input:focus, textarea:focus {
+      border-color: #7da2f7;
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, .12);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 10px;
+      background: #fff;
+      color: #344054;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+
+    .chip-text {
+      display: grid;
+      gap: 1px;
+      text-align: left;
+      line-height: 1.2;
+    }
+
+    .chip-main {
+      font-weight: 700;
+    }
+
+    .chip-example {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 400;
+    }
+
+    .chip[data-active="true"] {
+      border-color: rgba(185, 28, 28, .35);
+      background: var(--red-soft);
+      color: var(--red);
+      font-weight: 700;
+    }
+
+    .chip[data-active="true"] .chip-example {
+      color: #9f1239;
+    }
+
+    .chip[data-active="true"] .check {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .check {
+      width: 14px;
+      height: 14px;
+      opacity: 0;
+      transform: scale(.75);
+      transition: .12s ease;
+    }
+
+    .btn {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px 11px;
+      background: #fff;
+      color: #344054;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      border-color: #aab4c6;
+      background: #f9fafc;
+    }
+
+    .btn.primary {
+      border-color: var(--red);
+      background: var(--red);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      background: #a21616;
+    }
+
+    .btn.blue {
+      border-color: #b9cdfc;
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .btn.gold {
+      border-color: #f1d18d;
+      background: var(--gold-soft);
+      color: #8a570f;
+    }
+
+    .icon {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+    }
+
+    .output-grid {
+      display: grid;
+      grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .summary-band {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 72px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .preview {
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .poster-stage {
+      padding: 14px;
+      background: linear-gradient(135deg, #fff7ed 0%, #f9fafb 43%, #eef4ff 100%);
+      display: grid;
+      place-items: center;
+      min-height: 300px;
+    }
+
+    .poster-card {
+      width: min(190px, 100%);
+      aspect-ratio: 9 / 16;
+      border-radius: 8px;
+      padding: 18px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 24px 48px rgba(20, 24, 40, .28);
+      background: radial-gradient(circle at 50% 10%, rgba(255, 220, 120, .78), transparent 28%),
+        linear-gradient(150deg, #9f1239 0%, #7f1d1d 52%, #111827 100%);
+    }
+
+    .poster-card[data-style*="蓝橙"] {
+      color: #123;
+      background: radial-gradient(circle at 50% 10%, rgba(255, 184, 77, .85), transparent 30%),
+        linear-gradient(150deg, #dff1ff 0%, #77b7f7 55%, #ff9f43 100%);
+    }
+
+    .poster-card[data-style*="奶油"] {
+      color: #631414;
+      background: radial-gradient(circle at 50% 12%, rgba(255, 245, 205, .9), transparent 36%),
+        linear-gradient(150deg, #fff9ec 0%, #f4dcc1 55%, #b91c1c 100%);
+    }
+
+    .poster-card[data-style*="黑金"], .poster-card[data-style*="警示"] {
+      color: #fff7d6;
+      background: radial-gradient(circle at 50% 10%, rgba(250, 204, 21, .58), transparent 28%),
+        linear-gradient(150deg, #09090b 0%, #450a0a 56%, #111827 100%);
+    }
+
+    .poster-card[data-style*="紫黑"] {
+      color: #fff;
+      background: radial-gradient(circle at 52% 18%, rgba(236, 72, 153, .62), transparent 30%),
+        linear-gradient(150deg, #121026 0%, #3b0764 58%, #0f172a 100%);
+    }
+
+    .poster-card[data-style*="数据屏"] {
+      width: min(260px, 100%);
+      aspect-ratio: 16 / 9;
+      background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 44%, #1e3a8a 100%);
+    }
+
+    .poster-card::before {
+      content: "";
+      position: absolute;
+      inset: -20%;
+      background:
+        linear-gradient(110deg, transparent 0 42%, rgba(255,255,255,.26) 44%, transparent 48%),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,.25), transparent 18%);
+      transform: rotate(-8deg);
+    }
+
+    .poster-inner {
+      position: relative;
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      z-index: 1;
+    }
+
+    .poster-kicker {
+      font-size: 12px;
+      opacity: .86;
+      font-weight: 700;
+    }
+
+    .poster-title {
+      font-size: clamp(18px, 5vw, 28px);
+      line-height: 1.08;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-shadow: 0 4px 14px rgba(0,0,0,.22);
+      word-break: keep-all;
+    }
+
+    .poster-number {
+      align-self: center;
+      justify-self: center;
+      min-width: 72px;
+      min-height: 72px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      padding: 12px;
+      background: rgba(255, 255, 255, .9);
+      color: #b91c1c;
+      font-size: 42px;
+      font-weight: 900;
+      box-shadow: inset 0 0 0 3px rgba(183, 121, 31, .35), 0 16px 32px rgba(0,0,0,.22);
+    }
+
+    .poster-foot {
+      display: grid;
+      gap: 8px;
+    }
+
+    .poster-line {
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,.9);
+      color: #7f1d1d;
+      font-weight: 800;
+    }
+
+    .result-stack {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .prompt-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .prompt-grid pre {
+      max-height: 260px;
+    }
+
+    .result {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .result-head {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px 8px 12px;
+      background: var(--panel-2);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .result-head h3 {
+      margin: 0;
+      font-size: 13px;
+    }
+
+    pre {
+      margin: 0;
+      padding: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #273246;
+      font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.65;
+      max-height: 340px;
+      overflow: auto;
+    }
+
+    .route {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .pill {
+      border-radius: 8px;
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .pill.red { background: var(--red-soft); color: var(--red); border-color: #facaca; }
+    .pill.blue { background: var(--blue-soft); color: var(--blue); border-color: #c7d7fe; }
+    .pill.green { background: var(--green-soft); color: var(--green); border-color: #bdebd3; }
+    .pill.gold { background: var(--gold-soft); color: #8a570f; border-color: #f1d18d; }
+
+    .status-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #fff;
+      color: var(--muted);
+      min-height: 40px;
+    }
+
+    .status-box[data-kind="error"] {
+      color: var(--red);
+      background: var(--red-soft);
+      border-color: #facaca;
+      font-weight: 700;
+    }
+
+    .status-box[data-kind="loading"] {
+      color: var(--blue);
+      background: var(--blue-soft);
+      border-color: #c7d7fe;
+      font-weight: 700;
+    }
+
+    .generated-wrap {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      min-height: 420px;
+    }
+
+    .generated-image {
+      width: 100%;
+      max-height: 680px;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      display: none;
+    }
+
+    .generated-empty {
+      min-height: 390px;
+      display: grid;
+      place-items: center;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      background: #fbfcff;
+      text-align: center;
+      padding: 18px;
+    }
+
+    .generated-empty[data-loading="true"] {
+      color: var(--blue);
+      border-color: #b9cdfc;
+      background: var(--blue-soft);
+    }
+
+    .loader {
+      width: 34px;
+      height: 34px;
+      border: 3px solid #c7d7fe;
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .85s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .history-list {
+      display: grid;
+      gap: 8px;
+      max-height: 260px;
+      overflow: auto;
+      padding: 12px;
+    }
+
+    .history-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 9px;
+      display: grid;
+      grid-template-columns: 64px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+    }
+
+    .history-item img {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .history-item strong {
+      display: block;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .history-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, .48);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 50;
+    }
+
+    .modal-backdrop[data-open="true"] {
+      display: flex;
+    }
+
+    .modal {
+      width: min(920px, 100%);
+      max-height: min(760px, 92vh);
+      overflow: auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 28px 70px rgba(15, 23, 42, .28);
+      border: 1px solid var(--line);
+    }
+
+    .modal-body {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .config-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .config-item {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .config-item[data-active="true"] {
+      border-color: #f4a7a7;
+      background: var(--red-soft);
+    }
+
+    .config-item strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .config-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .danger-text {
+      color: var(--red);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      background: #111827;
+      color: #fff;
+      border-radius: 8px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+      transform: translateY(18px);
+      opacity: 0;
+      pointer-events: none;
+      transition: .18s ease;
+      z-index: 20;
+    }
+
+    .toast[data-show="true"] {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1180px) {
+      .shell, .output-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .controls-panel {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .controls-panel .section:nth-child(3) {
+        border-right: 0;
+      }
+
+      .summary-band {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .topbar {
+        height: auto;
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 14px;
+      }
+
+      .top-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .shell {
+        padding: 12px;
+        width: 100vw;
+        max-width: 100vw;
+        overflow-x: hidden;
+      }
+
+      .panel {
+        width: calc(100vw - 24px);
+        max-width: calc(100vw - 24px);
+      }
+
+      .grid-2, .summary-band {
+        grid-template-columns: 1fr;
+      }
+
+      .controls-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .controls-panel .section {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .section-title-row {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .section-title-row .btn {
+        width: 100%;
+      }
+
+      .chips {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .chip {
+        width: 100%;
+        min-width: 0;
+        justify-content: center;
+        padding-left: 6px;
+        padding-right: 6px;
+      }
+
+      .poster-stage {
+        min-height: 260px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .chips {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19V5"></path><path d="M4 5h13l-2 4 2 4H4"></path><path d="M10 19v-6"></path>
+          </svg>
+        </div>
+        <div>
+          <h1>海报生成控制台</h1>
+          <p>有道领世高中销转海报 prompt 原型</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn blue" id="applySmart">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2Z"></path>
+          </svg>
+          应用推荐
+        </button>
+        <button class="btn gold" id="resetBtn">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v6h6"></path>
+          </svg>
+          重置
+        </button>
+        <button class="btn primary" id="copyAll">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          复制全部
+        </button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <aside class="panel controls-panel">
+        <div class="panel-head">
+          <h2>选择与补充</h2>
+        </div>
+
+        <section class="section">
+          <div class="section-title">基础选择</div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="scene">业务场景</label>
+              <select id="scene"></select>
+            </div>
+            <div class="field">
+              <label for="aspect">画面比例</label>
+              <select id="aspect">
+                <option>竖版 9:16</option>
+                <option>方图 1:1</option>
+                <option>横版 16:9</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="style">视觉色系</label>
+              <select id="style"></select>
+            </div>
+            <div class="field">
+              <label for="layout">布局结构</label>
+              <select id="layout"></select>
+            </div>
+            <div class="field">
+              <label for="density">信息密度</label>
+              <select id="density"></select>
+            </div>
+            <div class="field">
+              <label for="grade">年级阶段</label>
+              <select id="grade"></select>
+            </div>
+            <div class="field">
+              <label for="audience">受众视角</label>
+              <select id="audience"></select>
+            </div>
+            <div class="field">
+              <label for="urgency">情绪强度</label>
+              <select id="urgency"></select>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title-row">
+            <div class="section-title">高级元素</div>
+            <button class="btn" id="clearElements" type="button">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path>
+              </svg>
+              不指定
+            </button>
+          </div>
+          <div class="chips" id="elementChips"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">产品信息</div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="productName">产品/课程名称</label>
+              <input id="productName" placeholder="例：春思卡 25H1 半年卡">
+            </div>
+            <div class="field">
+              <label for="subject">年级/科目</label>
+              <input id="subject" placeholder="例：高二数学">
+            </div>
+            <div class="field">
+              <label for="deadline">截止/开课时间</label>
+              <input id="deadline" placeholder="例：7月13日23:59">
+            </div>
+            <div class="field">
+              <label for="priceInfo">价格/优惠信息</label>
+              <input id="priceInfo" placeholder="例：早鸟优惠截止后恢复原价">
+            </div>
+            <div class="field">
+              <label for="seatInfo">名额/进度/满班率</label>
+              <input id="seatInfo" placeholder="例：仅剩 12 个名额">
+            </div>
+            <div class="field">
+              <label for="action">行动方式</label>
+              <input id="action" placeholder="例：联系学业诊断师锁定名额">
+            </div>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label for="modules">课程模块/服务权益/资料包</label>
+            <textarea id="modules" placeholder="例：课前诊断、直播课、课后答疑、资料包、规划服务"></textarea>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label for="customCopy">自定义主文案</label>
+            <textarea id="customCopy" placeholder="不填写时按业务场景自动生成"></textarea>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">模型生成</div>
+          <div class="grid-2">
+            <div class="field">
+              <label for="configSelect">模型配置</label>
+              <select id="configSelect"></select>
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button class="btn blue" id="openConfig" type="button">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                </svg>
+                API设置
+              </button>
+            </div>
+            <div class="field">
+              <label for="provider">当前供应商</label>
+              <select id="provider" disabled>
+                <option value="openai">OpenAI image2</option>
+                <option value="doubao">豆包 Seedream</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="model">当前模型</label>
+              <select id="model" disabled></select>
+            </div>
+            <div class="field">
+              <label for="apiSize">生成尺寸</label>
+              <select id="apiSize">
+              </select>
+            </div>
+            <div class="field">
+              <label for="quality">画质</label>
+              <select id="quality">
+                <option value="high">high</option>
+                <option value="medium">medium</option>
+                <option value="low">low</option>
+                <option value="auto">auto</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="outputFormat">输出格式</label>
+              <select id="outputFormat">
+                <option value="png">png</option>
+                <option value="jpeg">jpeg</option>
+                <option value="webp">webp</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button class="btn primary" id="generateBtn" type="button">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 3v18"></path><path d="m19 12-8-7v14Z"></path>
+                </svg>
+                生成海报
+              </button>
+            </div>
+          </div>
+          <div class="status-box" id="generateStatus" style="margin-top:12px;">请先启动本地服务，再点击生成。</div>
+        </section>
+      </aside>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>生成结果</h2>
+          <div class="route" style="padding:0;" id="routePills"></div>
+        </div>
+        <div class="section">
+          <div class="summary-band">
+            <div class="metric"><span>推荐风格</span><strong id="metricStyle"></strong></div>
+            <div class="metric"><span>核心版式</span><strong id="metricLayout"></strong></div>
+            <div class="metric"><span>生产路线</span><strong id="metricRoute"></strong></div>
+            <div class="metric"><span>视觉锚点</span><strong id="metricAnchor"></strong></div>
+          </div>
+
+          <div class="output-grid">
+            <div class="preview">
+              <div class="result-head">
+                <h3>视觉预览</h3>
+                <button class="btn" data-copy-target="visualPlan">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  复制方案
+                </button>
+              </div>
+              <div class="poster-stage">
+                <div class="poster-card" id="posterCard">
+                  <div class="poster-inner">
+                    <div class="poster-kicker" id="posterKicker"></div>
+                    <div class="poster-title" id="posterTitle"></div>
+                    <div class="poster-number" id="posterNumber"></div>
+                    <div class="poster-foot">
+                      <div class="poster-line" id="posterLine1"></div>
+                      <div class="poster-line" id="posterLine2"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="result-stack">
+              <div class="result">
+                <div class="result-head">
+                  <h3>生成图片</h3>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn" id="downloadBtn" type="button" disabled>
+                      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path>
+                      </svg>
+                      下载
+                    </button>
+                  </div>
+                </div>
+                <div class="generated-wrap">
+                  <div class="generated-empty" id="generatedEmpty">生成后的图片会显示在这里</div>
+                  <img class="generated-image" id="generatedImage" alt="生成海报">
+                </div>
+              </div>
+
+              <div class="result">
+                <div class="result-head">
+                  <h3>历史记录</h3>
+                  <button class="btn" id="clearHistory" type="button">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path>
+                    </svg>
+                    清空
+                  </button>
+                </div>
+                <div class="history-list" id="historyList"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="prompt-grid">
+            <div class="result">
+              <div class="result-head">
+                <h3>海报方案</h3>
+                <button class="btn" data-copy-target="visualPlan">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  复制
+                </button>
+              </div>
+              <pre id="visualPlan"></pre>
+            </div>
+            <div class="result">
+              <div class="result-head">
+                <h3>image2 Prompt</h3>
+                <button class="btn" data-copy-target="imagePrompt">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  复制
+                </button>
+              </div>
+              <pre id="imagePrompt"></pre>
+            </div>
+            <div class="result">
+              <div class="result-head">
+                <h3>Negative Prompt</h3>
+                <button class="btn" data-copy-target="negativePrompt">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  复制
+                </button>
+              </div>
+              <pre id="negativePrompt"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div class="modal-backdrop" id="configModal" data-open="false">
+    <div class="modal">
+      <div class="panel-head">
+        <h2>模型/API 设置</h2>
+        <button class="btn" id="closeConfig" type="button">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="status-box">
+          配置保存在当前浏览器本地，仅用于这个本地工具。若要部署给多人使用，请改为服务端统一管理 API Key。
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="configName">配置名称</label>
+            <input id="configName" placeholder="例：我的豆包生图">
+          </div>
+          <div class="field">
+            <label for="configProvider">供应商</label>
+            <select id="configProvider">
+              <option value="doubao">豆包 Seedream</option>
+              <option value="openai">OpenAI image2</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="configModel">模型 ID</label>
+            <input id="configModel" placeholder="例：doubao-seedream-5-0-260128">
+          </div>
+          <div class="field">
+            <label for="configEndpoint">Endpoint</label>
+            <input id="configEndpoint" placeholder="例：https://ark.cn-beijing.volces.com/api/v3/images/generations">
+          </div>
+          <div class="field" style="grid-column:1 / -1;">
+            <label for="configApiKey">API Key</label>
+            <input id="configApiKey" type="password" placeholder="粘贴你的 API Key">
+          </div>
+        </div>
+        <div class="danger-text">请勿在截图、群聊或对话中暴露 API Key。若已暴露，请立即在对应平台控制台重置。</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn primary" id="saveConfig" type="button">保存为当前配置</button>
+          <button class="btn" id="newConfig" type="button">新建空配置</button>
+          <button class="btn" id="deleteConfig" type="button">删除当前配置</button>
+        </div>
+        <div class="config-list" id="configList"></div>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast">已复制</div>
+
+  <script>
+    const schema = {
+      scene: ["开售", "开课", "封班", "下架", "涨价", "早鸟", "倒计时", "名额截杀", "补录", "返场", "报名进度", "课程规划", "课表", "名师背书", "促出勤"],
+      style: ["经典深红金", "深红金舞台", "深红金丝绸", "深红金庆典", "深红金警示", "明红橙金", "奶油金白", "奶油撕纸红", "蓝橙清爽", "蓝白科技", "黑金暗红", "紫黑霓虹", "纯红白信息型", "国潮红金", "横版红金数据屏"],
+      layout: ["巨型数字", "翻页牌", "电子屏", "日历台历", "闹钟计时器", "舞台聚光", "权益卡片", "趋势对比", "长图信息流", "撕纸通知", "卷轴书页", "教师矩阵", "横版数据大屏", "国潮牌匾", "毛绒数字", "吊牌票券"],
+      elements: ["光束", "烟花", "金币", "红绸", "金属字", "玻璃卡", "闹钟", "日历", "书本", "卷轴", "礼盒", "麦克风", "靶心", "箭头", "警示三角", "教师头像", "数据图表", "二维码"],
+      urgency: ["轻提醒", "中促动", "强截杀", "极限紧迫"],
+      density: ["短文案", "中文案", "长文案", "横版战报"],
+      audience: ["家长端", "学生端", "家长学生共用", "销售私聊", "社群群发"],
+      grade: ["高一", "高二", "高三", "全年级", "初高中衔接", "中考冲刺", "高考冲刺"]
+    };
+
+    const recommendations = {
+      "开售": { style: "深红金舞台", layout: "舞台聚光", urgency: "中促动", density: "短文案", elements: ["光束", "金币", "红绸", "金属字"] },
+      "开课": { style: "国潮红金", layout: "国潮牌匾", urgency: "中促动", density: "中文案", elements: ["光束", "麦克风", "书本", "金属字"] },
+      "封班": { style: "经典深红金", layout: "巨型数字", urgency: "强截杀", density: "短文案", elements: ["光束", "金币", "金属字", "闹钟"] },
+      "下架": { style: "深红金警示", layout: "翻页牌", urgency: "极限紧迫", density: "短文案", elements: ["警示三角", "光束", "金属字", "闹钟"] },
+      "涨价": { style: "深红金丝绸", layout: "趋势对比", urgency: "强截杀", density: "中文案", elements: ["箭头", "金币", "玻璃卡", "金属字"] },
+      "早鸟": { style: "深红金庆典", layout: "权益卡片", urgency: "强截杀", density: "中文案", elements: ["礼盒", "金币", "闹钟", "红绸"] },
+      "倒计时": { style: "经典深红金", layout: "闹钟计时器", urgency: "极限紧迫", density: "短文案", elements: ["闹钟", "光束", "金属字", "日历"] },
+      "名额截杀": { style: "黑金暗红", layout: "教师矩阵", urgency: "强截杀", density: "中文案", elements: ["教师头像", "金属字", "光束", "数据图表"] },
+      "补录": { style: "深红金丝绸", layout: "吊牌票券", urgency: "强截杀", density: "中文案", elements: ["礼盒", "金币", "红绸", "金属字"] },
+      "返场": { style: "深红金丝绸", layout: "吊牌票券", urgency: "强截杀", density: "中文案", elements: ["礼盒", "金币", "红绸", "玻璃卡"] },
+      "报名进度": { style: "横版红金数据屏", layout: "横版数据大屏", urgency: "强截杀", density: "横版战报", aspect: "横版 16:9", elements: ["数据图表", "金币", "金属字", "光束"] },
+      "课程规划": { style: "奶油金白", layout: "卷轴书页", urgency: "轻提醒", density: "中文案", elements: ["书本", "卷轴", "玻璃卡", "日历"] },
+      "课表": { style: "纯红白信息型", layout: "长图信息流", urgency: "轻提醒", density: "长文案", elements: ["日历", "书本", "数据图表", "二维码"] },
+      "名师背书": { style: "经典深红金", layout: "教师矩阵", urgency: "中促动", density: "中文案", elements: ["教师头像", "数据图表", "光束", "金属字"] },
+      "促出勤": { style: "蓝橙清爽", layout: "日历台历", urgency: "中促动", density: "中文案", elements: ["日历", "书本", "麦克风", "二维码"] }
+    };
+
+    const elementPools = {
+      scene: {
+        "开售": ["光束", "金币", "红绸", "金属字", "玻璃卡", "烟花", "礼盒", "舞台射灯", "金色粒子"],
+        "开课": ["麦克风", "日历", "书本", "光束", "金属字", "鼓", "灯笼", "课程表"],
+        "封班": ["闹钟", "日历", "金属字", "光束", "金币", "警示三角", "截止时间条", "红色警报光"],
+        "下架": ["翻页倒计时牌", "警示三角", "光束", "金属字", "封禁章", "黑金聚光", "截止时间条"],
+        "涨价": ["箭头", "金币", "玻璃卡", "趋势图", "价格牌", "电子屏", "锁价卡", "金色粒子"],
+        "早鸟": ["礼盒", "金币", "闹钟", "红绸", "VIP卡", "权益票券", "倒计时牌"],
+        "倒计时": ["闹钟", "日历", "电子屏", "翻页牌", "光束", "金属字", "截止时间条"],
+        "名额截杀": ["教师头像", "数据图表", "席位卡", "金属字", "光束", "名额吊牌", "榜单"],
+        "补录": ["吊牌", "票券", "礼盒", "金币", "红绸", "补录印章", "悬浮权益卡"],
+        "返场": ["吊牌", "票券", "礼盒", "红绸", "金币", "VIP卡", "返场印章"],
+        "报名进度": ["数据图表", "仪表盘", "百分比进度条", "奖杯", "光束", "金属字", "横版数据看板"],
+        "课程规划": ["书本", "卷轴", "日历", "玻璃卡", "学习路径图", "铅笔", "知识卡"],
+        "课表": ["日历", "课程表", "书本", "数据图表", "二维码", "清单卡", "时间轴"],
+        "名师背书": ["教师头像", "奖牌", "榜单", "数据图表", "金属字", "光束", "讲台"],
+        "促出勤": ["日历", "书本", "麦克风", "二维码", "资料包", "课前清单", "直播标签"]
+      },
+      style: {
+        "经典深红金": ["金币", "金属字", "光束", "红绸", "玻璃卡", "金色粒子"],
+        "深红金舞台": ["光束", "红绸", "金属字", "舞台地台", "红幕", "射灯"],
+        "深红金丝绸": ["红绸", "玻璃卡", "金币", "礼盒", "金边卡片", "柔光反射"],
+        "深红金庆典": ["烟花", "金币", "礼盒", "灯笼", "鼓", "金色彩带"],
+        "深红金警示": ["警示三角", "红色警报光", "光束", "封禁章", "黑红阴影"],
+        "明红橙金": ["箭头", "日历", "金币", "学生插画", "阳光光束"],
+        "奶油金白": ["日历", "书本", "卷轴", "玻璃卡", "纸张肌理", "浅金边框"],
+        "奶油撕纸红": ["闹钟", "撕纸边缘", "印章", "手势", "卷纸", "公告牌"],
+        "蓝橙清爽": ["日历", "书本", "奖杯", "校园背景", "阳光", "橙色台历"],
+        "蓝白科技": ["数据图表", "玻璃卡", "电子屏", "蓝白信息卡", "诊断图标"],
+        "黑金暗红": ["光束", "金属字", "警示三角", "黑金地台", "聚光灯"],
+        "紫黑霓虹": ["霓虹光轨", "麦克风", "发光吊牌", "直播标签", "光环"],
+        "纯红白信息型": ["日历", "书本", "数据图表", "二维码", "红色边框", "信息清单"],
+        "国潮红金": ["鼓", "灯笼", "牌匾", "卷轴", "烟花", "祥云"],
+        "横版红金数据屏": ["数据图表", "仪表盘", "奖杯", "百分比进度条", "金边面板"]
+      },
+      layout: {
+        "巨型数字": ["金属字", "光束", "截止时间条", "立体数字"],
+        "翻页牌": ["翻页倒计时牌", "金属扣", "台面投影", "截止时间条"],
+        "电子屏": ["电子屏", "箭头", "玻璃卡", "数字光效"],
+        "日历台历": ["日历", "书本", "铅笔", "台历装订环"],
+        "闹钟计时器": ["闹钟", "光束", "金币", "红色警报光"],
+        "舞台聚光": ["光束", "红绸", "舞台地台", "烟花"],
+        "权益卡片": ["玻璃卡", "礼盒", "金币", "权益票券"],
+        "趋势对比": ["箭头", "趋势图", "价格牌", "锁价卡"],
+        "长图信息流": ["数据图表", "日历", "书本", "二维码"],
+        "撕纸通知": ["撕纸边缘", "闹钟", "印章", "手势"],
+        "卷轴书页": ["卷轴", "书本", "铅笔", "知识卡"],
+        "教师矩阵": ["教师头像", "榜单", "奖牌", "名额卡"],
+        "横版数据大屏": ["数据图表", "仪表盘", "奖杯", "百分比进度条"],
+        "国潮牌匾": ["牌匾", "鼓", "灯笼", "祥云"],
+        "毛绒数字": ["学生插画", "毛绒数字", "校园背景", "阳光"],
+        "吊牌票券": ["吊牌", "票券", "礼盒", "红绸"]
+      },
+      universal: ["体积光", "层叠投影", "前景遮挡", "景深", "金色粒子", "高光描边", "透视地台", "悬浮卡片"]
+    };
+
+    const styleLooks = {
+      "经典深红金": "深红背景、金色立体标题、金币粒子、强聚光和高对比",
+      "深红金舞台": "红幕、舞台地台、聚光灯束、空间纵深",
+      "深红金丝绸": "红绸缎带、金边权益卡、柔和反光、贵重福利感",
+      "深红金庆典": "烟花、金币、灯笼、礼盒、庆典开售氛围",
+      "深红金警示": "黑红阴影、警示三角、红色警报光、斜向动势",
+      "明红橙金": "橙红渐变、明亮金色数字、暑期冲刺感",
+      "奶油金白": "米白纸张、浅金边框、清晰信息卡、家长端专业感",
+      "奶油撕纸红": "撕纸边缘、红色揭示层、真实通知、手势或印章",
+      "蓝橙清爽": "蓝天校园、橙色日历、清爽阳光、低焦虑学习氛围",
+      "蓝白科技": "蓝底白卡、数据诊断感、理性分析界面",
+      "黑金暗红": "黑金聚光、金属大字、强稀缺、最后机会氛围",
+      "紫黑霓虹": "紫黑夜色、霓虹光轨、直播年轻化氛围",
+      "纯红白信息型": "白底红框、正式通知、长文案清晰承载",
+      "国潮红金": "鼓、灯笼、牌匾、祥云、传统仪式感",
+      "横版红金数据屏": "横版战报、仪表盘、条形图、百分比和金色边框"
+    };
+
+    const layoutLooks = {
+      "巨型数字": "上方标题 + 中央巨大数字 + 下方截止时间/行动区",
+      "翻页牌": "机械翻页倒计时作为主视觉",
+      "电子屏": "电子数字屏承载小时、价格或涨幅",
+      "日历台历": "中心台历/翻页日历承载日期与课程信息",
+      "闹钟计时器": "闹钟、秒表或计时器强化截止紧迫感",
+      "舞台聚光": "标题悬浮于红幕舞台空间，下方放关键卖点",
+      "权益卡片": "多张权益卡片堆叠，承载服务/赠礼/资料",
+      "趋势对比": "价格前后对比、上升箭头或 V 型低价图",
+      "长图信息流": "顶部强标题，中部列表/表格，底部行动区",
+      "撕纸通知": "撕纸公告、印章、手势，制造必须看的消息感",
+      "卷轴书页": "卷轴/书页承载课程规划和学习资料",
+      "教师矩阵": "教师头像、名额卡或榜单建立信任",
+      "横版数据大屏": "横向数据看板、仪表盘、条形图、录取数据",
+      "国潮牌匾": "牌匾/鼓面承载开讲或解锁标题",
+      "毛绒数字": "软质 3D 数字和学生插画，年轻轻促动",
+      "吊牌票券": "吊牌、票券、补录权益卡堆叠"
+    };
+
+    const hooks = {
+      "封班": "封班在即",
+      "下架": "下架在即",
+      "倒计时": "仅剩 {time}",
+      "涨价": "即将涨价",
+      "早鸟": "早鸟福利倒计时",
+      "开售": "开售在即",
+      "开课": "开课在即",
+      "促出勤": "直播开启",
+      "补录": "限额补录",
+      "返场": "限时返场",
+      "报名进度": "报名进度实时更新",
+      "课程规划": "规划服务开启",
+      "课表": "课程安排一图看清",
+      "名师背书": "名师主讲 名额有限",
+      "名额截杀": "名额仅剩 抢占席位"
+    };
+
+    const state = {
+      selectedElements: new Set(["光束", "金币", "金属字", "闹钟"]),
+      autoSeed: Math.floor(Math.random() * 100000),
+      currentImageUrl: "",
+      history: [],
+      apiConfigs: [],
+      activeConfigId: ""
+    };
+
+    const providerModels = {
+      openai: ["gpt-image-2", "gpt-image-1.5", "gpt-image-1"],
+      doubao: ["__env__", "doubao-seedream-4-0-250828", "doubao-seedream-3-0-t2i-250415"]
+    };
+
+    const providerSizes = {
+      openai: [
+        { value: "1024x1536", label: "竖版 1024x1536" },
+        { value: "1536x1024", label: "横版 1536x1024" },
+        { value: "1024x1024", label: "方图 1024x1024" },
+        { value: "auto", label: "自动" }
+      ],
+      doubao: [
+        { value: "1440x2560", label: "竖版 1440x2560" },
+        { value: "2560x1440", label: "横版 2560x1440" },
+        { value: "1920x1920", label: "方图 1920x1920" },
+        { value: "auto", label: "自动" }
+      ]
+    };
+
+    const elementMeta = {
+      "光束": { icon: "✨", example: "舞台聚光" },
+      "烟花": { icon: "🎆", example: "开售庆典" },
+      "金币": { icon: "🪙", example: "优惠福利" },
+      "红绸": { icon: "🎀", example: "高级质感" },
+      "金属字": { icon: "🏅", example: "大标题" },
+      "玻璃卡": { icon: "▣", example: "权益承载" },
+      "闹钟": { icon: "⏰", example: "倒计时" },
+      "日历": { icon: "📅", example: "开课截止" },
+      "书本": { icon: "📚", example: "学习属性" },
+      "卷轴": { icon: "📜", example: "规划资料" },
+      "礼盒": { icon: "🎁", example: "赠礼福利" },
+      "麦克风": { icon: "🎙", example: "直播开讲" },
+      "靶心": { icon: "🎯", example: "目标冲刺" },
+      "箭头": { icon: "↗", example: "涨价趋势" },
+      "警示三角": { icon: "⚠", example: "最后提醒" },
+      "教师头像": { icon: "👨‍🏫", example: "名师背书" },
+      "数据图表": { icon: "📊", example: "进度战报" },
+      "二维码": { icon: "▦", example: "扫码行动" }
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function createId() {
+      return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function defaultEndpoint(provider) {
+      return provider === "doubao"
+        ? "https://ark.cn-beijing.volces.com/api/v3/images/generations"
+        : "https://api.openai.com/v1/images/generations";
+    }
+
+    function defaultModel(provider) {
+      return provider === "doubao" ? "doubao-seedream-5-0-260128" : "gpt-image-2";
+    }
+
+    function loadApiConfigs() {
+      try {
+        state.apiConfigs = JSON.parse(localStorage.getItem("posterApiConfigs") || "[]");
+      } catch {
+        state.apiConfigs = [];
+      }
+      state.activeConfigId = localStorage.getItem("posterActiveConfigId") || (state.apiConfigs[0] && state.apiConfigs[0].id) || "";
+      if (state.apiConfigs.length && !state.apiConfigs.some((item) => item.id === state.activeConfigId)) {
+        state.activeConfigId = state.apiConfigs[0].id;
+      }
+      renderConfigSelect();
+      renderConfigList();
+      applyActiveConfig();
+      if (!state.apiConfigs.length) {
+        openConfigModal();
+        newConfigDraft();
+      }
+    }
+
+    function saveApiConfigs() {
+      localStorage.setItem("posterApiConfigs", JSON.stringify(state.apiConfigs));
+      localStorage.setItem("posterActiveConfigId", state.activeConfigId || "");
+    }
+
+    function activeConfig() {
+      return state.apiConfigs.find((item) => item.id === state.activeConfigId) || null;
+    }
+
+    function renderConfigSelect() {
+      const select = $("configSelect");
+      if (!state.apiConfigs.length) {
+        select.innerHTML = '<option value="">未配置 API</option>';
+        return;
+      }
+      select.innerHTML = state.apiConfigs.map((item) => `<option value="${item.id}">${item.name || item.model}</option>`).join("");
+      select.value = state.activeConfigId;
+    }
+
+    function renderConfigList() {
+      const wrap = $("configList");
+      if (!state.apiConfigs.length) {
+        wrap.innerHTML = '<div class="generated-empty" style="min-height:74px;">暂无配置，请填写上方表单后保存。</div>';
+        return;
+      }
+      wrap.innerHTML = state.apiConfigs.map((item) => `
+        <button class="config-item" type="button" data-id="${item.id}" data-active="${item.id === state.activeConfigId}">
+          <span>
+            <strong>${item.name || item.model}</strong>
+            <span>${item.provider === "doubao" ? "豆包" : "OpenAI"} · ${item.model}</span>
+          </span>
+          <span>${item.id === state.activeConfigId ? "当前" : "选择"}</span>
+        </button>
+      `).join("");
+      wrap.querySelectorAll(".config-item").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state.activeConfigId = btn.dataset.id;
+          saveApiConfigs();
+          renderConfigSelect();
+          renderConfigList();
+          fillConfigForm(activeConfig());
+          applyActiveConfig();
+        });
+      });
+    }
+
+    function fillConfigForm(config) {
+      const item = config || {};
+      $("configName").value = item.name || "";
+      $("configProvider").value = item.provider || "doubao";
+      $("configModel").value = item.model || defaultModel(item.provider || "doubao");
+      $("configEndpoint").value = item.endpoint || defaultEndpoint(item.provider || "doubao");
+      $("configApiKey").value = item.apiKey || "";
+    }
+
+    function newConfigDraft() {
+      $("configName").value = "";
+      $("configProvider").value = "doubao";
+      $("configModel").value = defaultModel("doubao");
+      $("configEndpoint").value = defaultEndpoint("doubao");
+      $("configApiKey").value = "";
+    }
+
+    function saveConfigFromForm() {
+      const provider = $("configProvider").value;
+      const config = {
+        id: state.activeConfigId && state.apiConfigs.some((item) => item.id === state.activeConfigId) ? state.activeConfigId : createId(),
+        name: $("configName").value.trim() || `${provider === "doubao" ? "豆包" : "OpenAI"}-${$("configModel").value.trim() || defaultModel(provider)}`,
+        provider,
+        model: $("configModel").value.trim() || defaultModel(provider),
+        endpoint: $("configEndpoint").value.trim() || defaultEndpoint(provider),
+        apiKey: $("configApiKey").value.trim()
+      };
+      if (!config.apiKey) {
+        setStatus("请先填写 API Key。", "error");
+        return;
+      }
+      const index = state.apiConfigs.findIndex((item) => item.id === config.id);
+      if (index >= 0) {
+        state.apiConfigs[index] = config;
+      } else {
+        state.apiConfigs.push(config);
+      }
+      state.activeConfigId = config.id;
+      saveApiConfigs();
+      renderConfigSelect();
+      renderConfigList();
+      applyActiveConfig();
+      setStatus(`已保存模型配置：${config.name}`);
+      showToast();
+    }
+
+    function deleteActiveConfig() {
+      if (!state.activeConfigId) return;
+      state.apiConfigs = state.apiConfigs.filter((item) => item.id !== state.activeConfigId);
+      state.activeConfigId = state.apiConfigs[0] ? state.apiConfigs[0].id : "";
+      saveApiConfigs();
+      renderConfigSelect();
+      renderConfigList();
+      fillConfigForm(activeConfig());
+      applyActiveConfig();
+      if (!state.apiConfigs.length) newConfigDraft();
+    }
+
+    function ensureModelOption(model) {
+      if (!model) return;
+      const select = $("model");
+      if (![...select.options].some((option) => option.value === model)) {
+        select.insertAdjacentHTML("afterbegin", `<option value="${model}">${model}</option>`);
+      }
+      select.value = model;
+    }
+
+    function applyActiveConfig() {
+      const config = activeConfig();
+      if (!config) {
+        setStatus("未配置 API Key。请点击 API设置 添加模型配置。", "error");
+        return;
+      }
+      $("provider").value = config.provider;
+      fillModelSelect();
+      ensureModelOption(config.model);
+      setStatus(`当前模型配置：${config.name || config.model}`);
+    }
+
+    function openConfigModal() {
+      fillConfigForm(activeConfig());
+      $("configModal").dataset.open = "true";
+    }
+
+    function closeConfigModal() {
+      if (!state.apiConfigs.length) {
+        setStatus("至少需要保存一个模型配置后才能生成海报。", "error");
+      }
+      $("configModal").dataset.open = "false";
+    }
+
+    function iconCheck() {
+      return '<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 13 4 4L19 7"></path></svg>';
+    }
+
+    function fillSelect(id, values, initial) {
+      const el = $(id);
+      el.innerHTML = values.map((item) => `<option>${item}</option>`).join("");
+      if (initial) el.value = initial;
+    }
+
+    function fillModelSelect() {
+      const provider = $("provider").value;
+      const models = providerModels[provider] || providerModels.openai;
+      $("model").innerHTML = models.map((item) => {
+        const label = item === "__env__" ? "使用 .env 中的模型" : item;
+        return `<option value="${item}">${label}</option>`;
+      }).join("");
+      fillSizeSelect();
+      syncSizeWithAspect();
+    }
+
+    function fillSizeSelect() {
+      const provider = $("provider").value;
+      const sizes = providerSizes[provider] || providerSizes.openai;
+      $("apiSize").innerHTML = sizes.map((item) => `<option value="${item.value}">${item.label}</option>`).join("");
+    }
+
+    function syncSizeWithAspect() {
+      const aspect = $("aspect").value;
+      const provider = $("provider").value;
+      if (aspect.includes("横版")) {
+        $("apiSize").value = provider === "doubao" ? "2560x1440" : "1536x1024";
+      } else if (aspect.includes("方图")) {
+        $("apiSize").value = provider === "doubao" ? "1920x1920" : "1024x1024";
+      } else {
+        $("apiSize").value = provider === "doubao" ? "1440x2560" : "1024x1536";
+      }
+    }
+
+    function renderChips() {
+      const wrap = $("elementChips");
+      wrap.innerHTML = schema.elements.map((item) => {
+        const active = state.selectedElements.has(item);
+        const meta = elementMeta[item] || { icon: "•", example: "智能适配" };
+        return `<button class="chip" data-value="${item}" data-active="${active}">
+          ${iconCheck()}
+          <span class="chip-text">
+            <span class="chip-main">${meta.icon} ${item}</span>
+            <span class="chip-example">${meta.example}</span>
+          </span>
+        </button>`;
+      }).join("");
+      wrap.querySelectorAll(".chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          const value = chip.dataset.value;
+          if (state.selectedElements.has(value)) {
+            state.selectedElements.delete(value);
+          } else {
+            state.selectedElements.add(value);
+          }
+          renderChips();
+          update();
+        });
+      });
+    }
+
+    function applyRecommendation() {
+      const rec = recommendations[$("scene").value] || recommendations["封班"];
+      $("style").value = rec.style;
+      $("layout").value = rec.layout;
+      $("urgency").value = rec.urgency;
+      $("density").value = rec.density;
+      if (rec.aspect) $("aspect").value = rec.aspect;
+      state.selectedElements = new Set(rec.elements);
+      renderChips();
+      update();
+    }
+
+    function getInputs() {
+      return {
+        scene: $("scene").value,
+        style: $("style").value,
+        layout: $("layout").value,
+        urgency: $("urgency").value,
+        density: $("density").value,
+        audience: $("audience").value,
+        grade: $("grade").value,
+        aspect: $("aspect").value,
+        productName: $("productName").value.trim(),
+        subject: $("subject").value.trim(),
+        deadline: $("deadline").value.trim(),
+        priceInfo: $("priceInfo").value.trim(),
+        seatInfo: $("seatInfo").value.trim(),
+        action: $("action").value.trim(),
+        modules: $("modules").value.trim(),
+        customCopy: $("customCopy").value.trim(),
+        elements: Array.from(state.selectedElements)
+      };
+    }
+
+    function unique(items) {
+      return Array.from(new Set(items.filter(Boolean)));
+    }
+
+    function hashText(text) {
+      let hash = state.autoSeed;
+      for (let i = 0; i < text.length; i += 1) {
+        hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+      }
+      return Math.abs(hash);
+    }
+
+    function smartAutoElements(data) {
+      const pool = unique([
+        ...(elementPools.scene[data.scene] || []),
+        ...(elementPools.style[data.style] || []),
+        ...(elementPools.layout[data.layout] || []),
+        ...elementPools.universal
+      ]);
+      const seed = hashText(`${data.scene}|${data.style}|${data.layout}|${data.urgency}|${data.density}`);
+      return pool
+        .map((item, index) => ({ item, score: hashText(`${seed}|${item}|${index}`) }))
+        .sort((a, b) => a.score - b.score)
+        .map((entry) => entry.item);
+    }
+
+    function effectiveElements(data) {
+      const selected = data.elements || [];
+      const auto = smartAutoElements(data);
+      if (selected.length === 0) {
+        return auto.slice(0, 7);
+      }
+      return unique([...selected, ...auto.filter((item) => !selected.includes(item))]).slice(0, 9);
+    }
+
+    function elementModeText(data) {
+      return data.elements.length > 0
+        ? `优先融入销售勾选元素：${data.elements.join("、")}；同时智能补充适配元素。`
+        : "销售未指定高级元素，系统已按业务场景、色系和布局智能匹配高级感元素，并允许模型自由发挥更贴合画面的器物、光效和材质。";
+    }
+
+    function routeFor(density) {
+      if (density === "长文案" || density === "横版战报") {
+        return "image2 背景主视觉 + HTML/CSS 精确叠字";
+      }
+      if (density === "中文案") {
+        return "image2 整图生成 + 关键小字校正";
+      }
+      return "image2 直接生成完整海报";
+    }
+
+    function visualAnchor(data) {
+      const map = {
+        "巨型数字": "中央巨大倒计时数字",
+        "翻页牌": "白金翻页倒计时牌",
+        "电子屏": "金属电子数字屏",
+        "日历台历": "橙金台历/翻页日历",
+        "闹钟计时器": "红金闹钟/秒表",
+        "舞台聚光": "红幕舞台与立体标题",
+        "权益卡片": "多张金边权益卡片",
+        "趋势对比": "涨价趋势图与上升箭头",
+        "长图信息流": "清晰课程表与服务列表",
+        "撕纸通知": "撕纸公告与红色揭示层",
+        "卷轴书页": "卷轴书页和学习资料",
+        "教师矩阵": "教师头像矩阵与名额卡",
+        "横版数据大屏": "仪表盘、条形图、百分比战报",
+        "国潮牌匾": "金色牌匾或鼓面主视觉",
+        "毛绒数字": "柔软 3D 数字和学生插画",
+        "吊牌票券": "限额吊牌与补录票券"
+      };
+      return map[data.layout] || data.layout;
+    }
+
+    function headlineFor(data) {
+      if (data.customCopy) return data.customCopy.split(/\n/)[0].slice(0, 22);
+      const base = hooks[data.scene] || "限时开启";
+      if (base.includes("{time}")) {
+        return base.replace("{time}", data.deadline || "最后 3 天");
+      }
+      return base;
+    }
+
+    function subCopyFor(data) {
+      const product = data.productName || "高中系统学习课程";
+      const grade = data.subject || data.grade;
+      const deadline = data.deadline || "即将截止";
+      const action = data.action || "咨询老师了解报名方式";
+      const modules = data.modules || "课前诊断、直播精讲、课后答疑、资料包、规划服务";
+      const price = data.priceInfo || "当前享早鸟优惠";
+      const seat = data.seatInfo || "名额有限";
+
+      if (data.customCopy) return data.customCopy;
+
+      const sceneLines = {
+        "开售": [`${product}正式开启报名`, `${grade}学生可提前锁定学习规划`, data.deadline ? `关键时间：${deadline}` : "报名通道即将开启", action],
+        "开课": [`${product}即将开课`, data.deadline ? `开课时间：${deadline}` : "开课时间即将临近", `提前完成课前准备，开课后快速进入状态`, action],
+        "封班": [`${product}进入封班倒计时`, seat, data.deadline ? `封班时间：${deadline}` : "即将封班", action],
+        "下架": [`${product}下架在即`, `最后一次锁定当前权益`, data.deadline ? `下架时间：${deadline}` : "即将下架", action],
+        "涨价": [`${product}即将涨价`, price, data.deadline ? `涨价时间：${deadline}` : "价格优惠即将截止", action],
+        "早鸟": [`${product}早鸟福利倒计时`, price, data.deadline ? `截止/开课时间：${deadline}` : "早鸟福利即将截止", seat, action],
+        "倒计时": [`${product}倒计时提醒`, data.deadline ? `关键时间：${deadline}` : "关键节点即将到来", action],
+        "名额截杀": [`${product}名额快速减少`, seat, `适合${grade}提前锁定老师服务`, action],
+        "补录": [`${product}开放少量补录`, seat, data.deadline ? `补录截止：${deadline}` : "补录即将截止", action],
+        "返场": [`${product}限时返场`, `错过上一轮的最后补录机会`, data.deadline ? `返场截止：${deadline}` : "返场即将截止", seat, action],
+        "报名进度": [`${product}报名进度实时更新`, seat, data.deadline ? `统计/截止时间：${deadline}` : "报名进度持续更新", `满班后不再开放特殊申请`],
+        "课程规划": [`${product}规划服务开启`, modules, `让学习路径更清晰`],
+        "课表": [`${product}课程安排`, modules, `按时到课领取配套资料`],
+        "名师背书": [`${product}名师主讲`, `${grade}核心问题集中突破`, `${seat}`],
+        "促出勤": [`${product}直播提醒`, modules, `准时到课，领取配套资料`]
+      };
+      return (sceneLines[data.scene] || sceneLines["封班"]).join("\n");
+    }
+
+    function makePlan(data) {
+      const elements = effectiveElements(data);
+      return [
+        `业务场景：${data.scene} / ${data.grade} / ${data.audience}`,
+        `视觉色系：${data.style}。${styleLooks[data.style] || ""}`,
+        `布局结构：${data.layout}。${layoutLooks[data.layout] || ""}`,
+        `元素策略：${elementModeText(data)}`,
+        `实际融入：${elements.join("、")}`,
+        `情绪强度：${data.urgency}`,
+        `信息密度：${data.density}`,
+        `生产路线：${routeFor(data.density)}`,
+        `敏感信息策略：${sensitivePolicyText(data)}`,
+        "",
+        "建议文案：",
+        subCopyFor(data)
+      ].join("\n");
+    }
+
+    function sensitiveFacts(data) {
+      return [
+        data.productName ? `产品/课程名称：${data.productName}` : "产品/课程名称：未输入，使用泛化表述，不得编造具体产品名",
+        data.subject ? `年级/科目：${data.subject}` : `年级阶段：${data.grade}`,
+        data.deadline ? `截止/开课时间：${data.deadline}` : "截止/开课时间：未输入，不得出现任何具体日期、星期、小时、分钟，只能写“即将截止/即将开课/限时”",
+        data.priceInfo ? `价格/优惠信息：${data.priceInfo}` : "价格/优惠信息：未输入，不得出现任何具体价格、金额、折扣、涨价幅度，只能写“享早鸟优惠/价格优惠”",
+        data.seatInfo ? `名额/进度/满班率：${data.seatInfo}` : "名额/进度/满班率：未输入，不得出现任何具体名额、百分比、报名人数，只能写“名额有限/报名进行中”",
+        data.action ? `行动方式：${data.action}` : "行动方式：未输入，使用“咨询老师了解报名方式”，不得编造暗号或二维码"
+      ];
+    }
+
+    function sensitivePolicyText(data) {
+      const missing = [];
+      if (!data.deadline) missing.push("具体时间");
+      if (!data.priceInfo) missing.push("价格/优惠数字");
+      if (!data.seatInfo) missing.push("名额/进度数字");
+      if (!data.action) missing.push("行动暗号/扫码方式");
+      if (missing.length === 0) {
+        return "时间、价格、名额、行动方式均已输入，必须逐字使用，不得替换或新增其他数字。";
+      }
+      return `缺少${missing.join("、")}时，只能使用模糊表达，严禁编造具体数字或日期。`;
+    }
+
+    function makePrompt(data) {
+      const elements = effectiveElements(data);
+      const product = data.productName || "高中在线系统学习课程";
+      const subject = data.subject || data.grade;
+      const exactText = subCopyFor(data).replace(/\n/g, "；");
+      const textMode = data.density === "长文案" || data.density === "横版战报"
+        ? "只生成高级背景、主视觉、标题区和内容留白区，不要生成密集小字，后续用 HTML/CSS 叠加精确中文。"
+        : "生成完整中文海报，包含清晰可读的主标题、关键标签、截止时间和行动区。";
+      const aspectText = data.aspect.includes("横版") ? "16:9 horizontal poster" : data.aspect.includes("方图") ? "1:1 square poster" : "9:16 vertical poster";
+      return [
+        `Create a premium Chinese online-education sales poster for Youdao Lingshi high-school conversion, ${aspectText}.`,
+        `Business scene: ${data.scene}. Audience: ${data.audience}, ${subject}. Product/course: ${product}.`,
+        `Visual style: ${data.style}; ${styleLooks[data.style] || "premium commercial campaign style"}.`,
+        `Layout: ${data.layout}; ${layoutLooks[data.layout] || "clear commercial hierarchy"}.`,
+        `Main visual anchor: ${visualAnchor(data)}.`,
+        "Strict factual constraints for sensitive sales information:",
+        ...sensitiveFacts(data).map((line) => `- ${line}`),
+        "Never invent or alter dates, weekdays, times, prices, discounts, price increases, seat counts, percentages, registration numbers, QR codes, reply codes, teacher names, or course names. If a sensitive field is not provided, use only vague wording and leave exact details out.",
+        `Premium element strategy: ${elementModeText(data)}`,
+        `Premium elements to integrate first: ${elements.join(", ")}.`,
+        "You may freely add other suitable premium commercial elements beyond the selected list if they improve the composition, such as cinematic light beams, realistic material texture, layered cards, education props, countdown devices, or celebratory details.",
+        `Copy direction: ${exactText}.`,
+        textMode,
+        "Use dimensional Chinese typography, glossy card materials, layered foreground/midground/background, cinematic lighting, realistic cast shadows, volumetric glow, polished education props, and a clear action focus.",
+        "No logo, no watermark, no fake QR code unless explicitly provided."
+      ].join("\n");
+    }
+
+    function makeNegativePrompt(data) {
+      const denseTextGuard = data.density === "长文案" || data.density === "横版战报"
+        ? "broken small Chinese text, fake dense tables, unreadable schedule text, incorrect teacher names, fake QR code,"
+        : "broken Chinese text, ugly card typography, low-end font,";
+      return [
+        "flat poster, plain solid background, PPT-like layout, low-end template, sticker collage, pasted icons, cheap clipart, weak lighting, weak depth, no shadows, no perspective, empty background,",
+        "red-orange retro pop-art coupon style, halftone dots, comic starburst stickers, crude thick text outlines, bargain-sale supermarket look, chaotic discount labels,",
+        "gloomy unreadable black-red scene, over-dark background, excessive sparks covering text, random photorealistic people, fake logos, watermark,",
+        "invented dates, invented weekdays, invented times, invented prices, invented discounts, invented seat counts, invented registration percentages, invented teacher names, invented course names, fake reply codes, fake QR codes,",
+        denseTextGuard,
+        "crowded modules, overlapping text, text outside safe area"
+      ].join(" ");
+    }
+
+    function setStatus(message, kind = "") {
+      const el = $("generateStatus");
+      el.textContent = message;
+      el.dataset.kind = kind;
+    }
+
+    function imageSrcFromResult(result) {
+      if (result.imageUrl) return result.imageUrl;
+      if (result.savedPath) return localProxyUrl(result.savedPath);
+      if (result.imageBase64) {
+        const format = $("outputFormat").value || "png";
+        return `data:image/${format};base64,${result.imageBase64}`;
+      }
+      return "";
+    }
+
+    function localProxyUrl(path) {
+      if (!path) return "";
+      if (/^https?:\/\//i.test(path) || path.startsWith("data:")) return path;
+      if (window.location.protocol === "file:") {
+        return `http://127.0.0.1:8787${path.startsWith("/") ? path : `/${path}`}`;
+      }
+      return path;
+    }
+
+    function generateApiUrl() {
+      return localProxyUrl("/api/generate-poster");
+    }
+
+    function showGeneratedImage(src) {
+      state.currentImageUrl = src;
+      $("generatedImage").src = src;
+      $("generatedImage").style.display = "block";
+      $("generatedEmpty").style.display = "none";
+      $("generatedEmpty").dataset.loading = "false";
+      $("downloadBtn").disabled = false;
+    }
+
+    function setGeneratedEmpty(message, isLoading = false) {
+      $("generatedImage").style.display = "none";
+      $("generatedEmpty").style.display = "grid";
+      $("generatedEmpty").dataset.loading = String(isLoading);
+      $("generatedEmpty").innerHTML = isLoading
+        ? `<div><div class="loader"></div><div>${message}</div></div>`
+        : message;
+    }
+
+    function loadHistory() {
+      try {
+        state.history = JSON.parse(localStorage.getItem("posterHistory") || "[]");
+      } catch {
+        state.history = [];
+      }
+      renderHistory();
+    }
+
+    function saveHistoryItem(item) {
+      state.history = [item, ...state.history].slice(0, 12);
+      try {
+        localStorage.setItem("posterHistory", JSON.stringify(state.history));
+      } catch {
+        state.history = state.history.slice(0, 3);
+        try {
+          localStorage.setItem("posterHistory", JSON.stringify(state.history));
+        } catch {
+          localStorage.removeItem("posterHistory");
+          state.history = [];
+        }
+      }
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const wrap = $("historyList");
+      if (!state.history.length) {
+        wrap.innerHTML = '<div class="generated-empty" style="min-height:80px;">暂无历史记录</div>';
+        return;
+      }
+      wrap.innerHTML = state.history.map((item, index) => `
+        <button class="history-item" data-index="${index}" type="button">
+          <img src="${item.imageUrl}" alt="">
+          <span>
+            <strong>${item.scene} · ${item.provider} · ${item.model}</strong>
+            <span>${item.createdAt}</span>
+          </span>
+        </button>
+      `).join("");
+      wrap.querySelectorAll(".history-item").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const item = state.history[Number(btn.dataset.index)];
+          if (item && item.imageUrl) {
+            showGeneratedImage(item.imageUrl);
+            setStatus(`已载入历史记录：${item.scene} / ${item.model}`);
+          }
+        });
+      });
+    }
+
+    async function generatePoster() {
+      const data = getInputs();
+      const config = activeConfig();
+      if (!config) {
+        openConfigModal();
+        setStatus("请先添加并保存模型/API 配置。", "error");
+        return;
+      }
+      const payload = {
+        provider: config.provider,
+        model: config.model,
+        apiKey: config.apiKey,
+        endpoint: config.endpoint,
+        prompt: $("imagePrompt").textContent,
+        negativePrompt: $("negativePrompt").textContent,
+        size: $("apiSize").value,
+        quality: $("quality").value,
+        outputFormat: $("outputFormat").value,
+        scene: data.scene
+      };
+
+      $("generateBtn").disabled = true;
+      setStatus("正在调用模型生成海报，请稍候...", "loading");
+      setGeneratedEmpty("正在生成海报，通常需要几十秒，请勿重复点击。", true);
+
+      try {
+        const response = await fetch(generateApiUrl(), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const responseText = await response.text();
+        let result;
+        try {
+          result = responseText ? JSON.parse(responseText) : {};
+        } catch {
+          const preview = responseText.slice(0, 120).replace(/\s+/g, " ");
+          throw new Error(`本地代理没有返回 JSON。请确认页面通过 http://127.0.0.1:8787/ 打开，且 Node 代理服务正在运行。返回片段：${preview}`);
+        }
+        if (!response.ok || !result.ok) {
+          const detail = result.detail ? `（详情：${result.detail}）` : "";
+          throw new Error(`${result.error || "生成失败"}${detail}`);
+        }
+        const src = imageSrcFromResult(result);
+        if (!src) throw new Error("接口未返回图片");
+        showGeneratedImage(src);
+        const historyUrl = result.savedPath || result.imageUrl || "";
+        if (historyUrl) {
+          saveHistoryItem({
+            imageUrl: historyUrl,
+            provider: result.provider,
+            model: result.model,
+            scene: data.scene,
+            createdAt: new Date().toLocaleString()
+          });
+        }
+        setStatus("生成完成。请检查图片中的时间、价格、名额等敏感信息是否与输入完全一致。");
+      } catch (error) {
+        setStatus(error.message || "生成失败", "error");
+        setGeneratedEmpty(`生成失败：${error.message || "请检查 API Key、网络或模型参数"}`);
+      } finally {
+        $("generateBtn").disabled = false;
+      }
+    }
+
+    function downloadCurrentImage() {
+      if (!state.currentImageUrl) return;
+      const link = document.createElement("a");
+      link.href = state.currentImageUrl;
+      link.download = `poster-${Date.now()}.${$("outputFormat").value || "png"}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    function updatePreview(data) {
+      const title = headlineFor(data);
+      $("posterCard").dataset.style = data.style;
+      $("posterKicker").textContent = `${data.grade} · ${data.scene}`;
+      $("posterTitle").textContent = title;
+      const numberSource = data.deadline || data.seatInfo || data.priceInfo || "3天";
+      const numberMatch = numberSource.match(/[0-9]+|[一二三四五六七八九十]+/);
+      $("posterNumber").textContent = numberMatch ? numberMatch[0] : (data.scene === "报名进度" ? "97%" : "3");
+      $("posterLine1").textContent = data.productName || "高中系统学习课程";
+      $("posterLine2").textContent = data.action || "联系学业诊断师锁定名额";
+    }
+
+    function update() {
+      const data = getInputs();
+      const route = routeFor(data.density);
+      const anchor = visualAnchor(data);
+      const elements = effectiveElements(data);
+      $("metricStyle").textContent = data.style;
+      $("metricLayout").textContent = data.layout;
+      $("metricRoute").textContent = route;
+      $("metricAnchor").textContent = `${anchor} + ${elements.slice(0, 3).join("、")}`;
+      $("visualPlan").textContent = makePlan(data);
+      $("imagePrompt").textContent = makePrompt(data);
+      $("negativePrompt").textContent = makeNegativePrompt(data);
+      $("routePills").innerHTML = [
+        `<span class="pill red">${data.scene}</span>`,
+        `<span class="pill gold">${data.style}</span>`,
+        `<span class="pill blue">${data.layout}</span>`,
+        `<span class="pill green">${data.elements.length ? "元素优先" : "智能元素"}</span>`
+      ].join("");
+      updatePreview(data);
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (error) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+      }
+      showToast();
+    }
+
+    function showToast() {
+      const toast = $("toast");
+      toast.dataset.show = "true";
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        toast.dataset.show = "false";
+      }, 1400);
+    }
+
+    function resetAll() {
+      $("scene").value = "封班";
+      $("audience").value = "家长学生共用";
+      $("grade").value = "全年级";
+      $("aspect").value = "竖版 9:16";
+      ["productName", "subject", "deadline", "priceInfo", "seatInfo", "action", "modules", "customCopy"].forEach((id) => $(id).value = "");
+      applyRecommendation();
+    }
+
+    function init() {
+      fillSelect("scene", schema.scene, "封班");
+      fillSelect("style", schema.style, "经典深红金");
+      fillSelect("layout", schema.layout, "巨型数字");
+      fillSelect("urgency", schema.urgency, "强截杀");
+      fillSelect("density", schema.density, "短文案");
+      fillSelect("audience", schema.audience, "家长学生共用");
+      fillSelect("grade", schema.grade, "全年级");
+      fillModelSelect();
+      renderChips();
+      loadHistory();
+      loadApiConfigs();
+
+      ["scene", "style", "layout", "urgency", "density", "audience", "grade", "aspect", "productName", "subject", "deadline", "priceInfo", "seatInfo", "action", "modules", "customCopy"].forEach((id) => {
+        $(id).addEventListener("input", () => {
+          if (id === "scene") applyRecommendation();
+          if (id === "aspect") syncSizeWithAspect();
+          update();
+        });
+      });
+
+      $("provider").addEventListener("change", () => {
+        fillModelSelect();
+        update();
+      });
+      $("configSelect").addEventListener("change", () => {
+        state.activeConfigId = $("configSelect").value;
+        saveApiConfigs();
+        renderConfigList();
+        fillConfigForm(activeConfig());
+        applyActiveConfig();
+      });
+      $("openConfig").addEventListener("click", openConfigModal);
+      $("closeConfig").addEventListener("click", closeConfigModal);
+      $("saveConfig").addEventListener("click", saveConfigFromForm);
+      $("newConfig").addEventListener("click", () => {
+        state.activeConfigId = "";
+        renderConfigList();
+        newConfigDraft();
+      });
+      $("deleteConfig").addEventListener("click", deleteActiveConfig);
+      $("configProvider").addEventListener("change", () => {
+        const provider = $("configProvider").value;
+        $("configModel").value = defaultModel(provider);
+        $("configEndpoint").value = defaultEndpoint(provider);
+      });
+
+      $("applySmart").addEventListener("click", applyRecommendation);
+      $("resetBtn").addEventListener("click", resetAll);
+      $("clearElements").addEventListener("click", () => {
+        state.selectedElements.clear();
+        state.autoSeed = Math.floor(Math.random() * 100000);
+        renderChips();
+        update();
+      });
+      $("generateBtn").addEventListener("click", generatePoster);
+      $("downloadBtn").addEventListener("click", downloadCurrentImage);
+      $("clearHistory").addEventListener("click", () => {
+        state.history = [];
+        localStorage.removeItem("posterHistory");
+        renderHistory();
+        setStatus("历史记录已清空。");
+      });
+      $("copyAll").addEventListener("click", () => {
+        copyText([
+          "【海报方案】",
+          $("visualPlan").textContent,
+          "",
+          "【image2 Prompt】",
+          $("imagePrompt").textContent,
+          "",
+          "【Negative Prompt】",
+          $("negativePrompt").textContent
+        ].join("\n"));
+      });
+
+      document.querySelectorAll("[data-copy-target]").forEach((btn) => {
+        btn.addEventListener("click", () => copyText($(btn.dataset.copyTarget).textContent));
+      });
+
+      update();
+    }
+
+    init();
+  </script>
+</body>
+</html>
+

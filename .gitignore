@@ -1,0 +1,9 @@
+.env
+.netlify/
+node_modules/
+dist/
+output/
+server.log
+server.err.log
+server.pid
+tmp/
