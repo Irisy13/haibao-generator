@@ -1898,7 +1898,7 @@
 
     function imageSrcFromResult(result) {
       if (result.imageUrl) return result.imageUrl;
-      if (result.savedPath) return localProxyUrl(result.savedPath);
+      if (result.savedPath) return appUrl(result.savedPath);
       if (result.imageBase64) {
         const format = $("outputFormat").value || "png";
         return `data:image/${format};base64,${result.imageBase64}`;
@@ -1906,17 +1906,17 @@
       return "";
     }
 
-    function localProxyUrl(path) {
+    function appUrl(path) {
       if (!path) return "";
       if (/^https?:\/\//i.test(path) || path.startsWith("data:")) return path;
       if (window.location.protocol === "file:") {
         return `http://127.0.0.1:8787${path.startsWith("/") ? path : `/${path}`}`;
       }
-      return path;
+      return new URL(path.startsWith("/") ? path : `/${path}`, window.location.origin).href;
     }
 
     function generateApiUrl() {
-      return localProxyUrl("/api/generate-poster");
+      return appUrl("/api/generate-poster");
     }
 
     function showGeneratedImage(src) {
@@ -2025,7 +2025,10 @@
           result = responseText ? JSON.parse(responseText) : {};
         } catch {
           const preview = responseText.slice(0, 120).replace(/\s+/g, " ");
-          throw new Error(`本地代理没有返回 JSON。请确认页面通过 http://127.0.0.1:8787/ 打开，且 Node 代理服务正在运行。返回片段：${preview}`);
+          const routeHint = window.location.protocol === "file:"
+            ? "当前是本地文件打开，请确认本地 Node 代理服务正在运行：http://127.0.0.1:8787/"
+            : "当前是线上站点，请确认 Netlify Function /api/generate-poster 已成功部署。";
+          throw new Error(`接口没有返回 JSON。${routeHint} 返回片段：${preview}`);
         }
         if (!response.ok || !result.ok) {
           const detail = result.detail ? `（详情：${result.detail}）` : "";
